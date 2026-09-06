@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0b0f17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AWE Dashboard">
+<title>AWE Dashboard</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230b0f17'/%3E%3Ccircle cx='50' cy='50' r='30' stroke='%23a9c9f5' stroke-width='7' fill='none'/%3E%3Cpath d='M50 34 L50 50 L62 58' stroke='%23a9c9f5' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230b0f17'/%3E%3Ccircle cx='50' cy='50' r='30' stroke='%23a9c9f5' stroke-width='7' fill='none'/%3E%3Cpath d='M50 34 L50 50 L62 58' stroke='%23a9c9f5' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b0f17;
+    --surface: #131a26;
+    --surface-2: #1a2333;
+    --border: #253044;
+    --blue: #a9c9f5;
+    --blue-soft: #7fa8d9;
+    --blue-dim: #5b7599;
+    --text-dim: #8b9bb4;
+    --coral: #f2a4a4;
+    --coral-deep: #e08888;
+    --mint: #9fdcc0;
+    --mint-deep: #79c2a0;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--blue);
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+  }
+  .app{
+    width:100%;
+    max-width: 460px;
+    padding: 20px 20px 40px;
+    display:flex;
+    flex-direction:column;
+    transition: max-width 0.2s ease;
+  }
+  @media (min-width: 760px){
+    .app{ max-width: 880px; padding: 32px 32px 56px; }
+  }
+
+  .masthead{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 4px;
+  }
+  .masthead h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size: 1rem;
+    margin:0;
+    color: var(--blue-soft);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .masthead .date{
+    font-size:0.75rem;
+    color: var(--text-dim);
+  }
+
+  /* Clock */
+  .clock-block{
+    text-align:center;
+    padding: 28px 0 6px;
+  }
+  .clock{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size: 4.4rem;
+    line-height:1;
+    letter-spacing: -0.01em;
+    color: var(--blue);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 36px rgba(169,201,245,0.25);
+  }
+  @media (min-width: 760px){
+    .clock{ font-size: 7rem; }
+  }
+
+  /* Lesson block */
+  .lesson-block{
+    text-align:center;
+    padding: 4px 0 26px;
+  }
+  .lesson-name{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size: 1.15rem;
+    color: var(--mint);
+  }
+  .lesson-sub{
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* Grid of cards */
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  @media (min-width: 760px){
+    .grid{ grid-template-columns: 1fr 1fr; gap: 16px; }
+    .calendar-card{ grid-row: span 2; }
+  }
+
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 18px;
+    display:block;
+    text-decoration:none;
+    color: inherit;
+  }
+  .card-label{
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  /* To-Do card */
+  .todo-card{
+    cursor:pointer;
+    transition: transform 0.08s ease, background 0.15s ease;
+  }
+  .todo-card:active{ transform: scale(0.98); }
+  .todo-card:hover{ background: var(--surface-2); }
+  .card-number{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size: 2.6rem;
+    color: var(--blue);
+    line-height:1;
+  }
+  .todo-cycler{
+    margin-top: 12px;
+    min-height: 40px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+  .todo-cycler .t-title{
+    font-weight:600;
+    font-size: 0.9rem;
+    color: var(--blue);
+  }
+  .todo-cycler .t-meta{
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  /* Weather card */
+  .weather-main{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size: 2.6rem;
+    color: var(--blue);
+    line-height:1;
+  }
+  .weather-sub{
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  /* Calendar card */
+  .calendar-list{ display:flex; flex-direction:column; gap:10px; }
+  .cal-entry{
+    display:flex;
+    gap:10px;
+    align-items:baseline;
+    font-size: 0.86rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+  .cal-entry:last-child{ border-bottom:none; padding-bottom:0; }
+  .cal-time{ color: var(--text-dim); font-size: 0.78rem; flex-shrink:0; min-width: 58px; }
+  .cal-title{ color: var(--blue); word-break: break-word; }
+  .empty{ font-size: 0.85rem; color: var(--text-dim); }
+  .cal-fallback a{ color: var(--blue-soft); }
+
+  /* Note card */
+  .note-card textarea{
+    width:100%;
+    min-height: 90px;
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    color: var(--blue);
+    font-family:'Inter', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    resize: vertical;
+  }
+  .note-card textarea::placeholder{ color: var(--text-dim); }
+
+  /* Quick links */
+  .quicklinks{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .qlink{
+    flex: 1 1 calc(50% - 10px);
+    text-align:center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 10px;
+    color: var(--blue-soft);
+    text-decoration:none;
+    font-size: 0.84rem;
+    font-weight:600;
+    transition: background 0.15s ease, transform 0.08s ease;
+  }
+  .qlink:active{ transform: scale(0.97); }
+  .qlink:hover{ background: var(--surface-2); }
+  @media (min-width: 760px){
+    .qlink{ flex: 1 1 calc(20% - 10px); }
+  }
+
+  .status-line{
+    text-align:center;
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    margin-top: 16px;
+    min-height: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="masthead">
+    <h1>AWE Dashboard</h1>
+    <div class="date" id="todayDate"></div>
+  </div>
+
+  <div class="clock-block">
+    <div class="clock" id="clockDisplay">00:00:00</div>
+  </div>
+
+  <div class="lesson-block" id="lessonBlock">
+    <div class="lesson-name" id="lessonName"></div>
+    <div class="lesson-sub" id="lessonSub"></div>
+  </div>
+
+  <div class="grid">
+    <a class="card todo-card" id="todoCard" href="#" rel="noopener">
+      <div class="card-label">To-Do</div>
+      <div class="card-number" id="todoCount">0</div>
+      <div class="todo-cycler" id="todoCycler">
+        <div class="t-title">No open tasks</div>
+      </div>
+    </a>
+
+    <div class="card weather-card">
+      <div class="card-label">Weather · Yate</div>
+      <div class="weather-main" id="weatherMain">--°</div>
+      <div class="weather-sub" id="weatherSub">Loading…</div>
+    </div>
+
+    <div class="card calendar-card">
+      <div class="card-label">Today's Calendar</div>
+      <div class="calendar-list" id="calendarList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div class="card note-card">
+      <div class="card-label">Note of the day</div>
+      <textarea id="noteInput" placeholder="Write something you want to remember today..."></textarea>
+    </div>
+  </div>
+
+  <div class="quicklinks" id="quickLinks"></div>
+  <div class="status-line" id="statusLine"></div>
+</div>
+
+<script>
+(function(){
+
+  // ---------- CONFIG ----------
+  // TODO: replace with the real URL of your To-Do list app once it's deployed
+  const TODO_APP_URL = 'https://axista-four.github.io/awe-todo/';
+
+  const TODO_STORAGE_KEY = 'awe-todo-state';
+  const NOTE_STORAGE_KEY = 'awe-dashboard-note';
+
+  const YATE_LAT = 51.5406;
+  const YATE_LON = -2.4130;
+
+  const CALENDAR_ICS_URL = 'https://calendar.google.com/calendar/ical/aweech%40yateacademy.co.uk/public/basic.ics';
+  const CALENDAR_PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(CALENDAR_ICS_URL);
+
+  const SCHEDULE = [
+    { name: 'Morning Greeting/Tutor', start: '08:30', end: '09:05' },
+    { name: 'Lesson 1',               start: '09:05', end: '10:00' },
+    { name: 'Lesson 2',               start: '10:00', end: '10:55' },
+    { name: 'Break',                  start: '10:55', end: '11:12' },
+    { name: 'Line-Up (Break)',        start: '11:12', end: '11:20' },
+    { name: 'Lesson 3',               start: '11:20', end: '12:15' },
+    { name: 'Lesson 4',               start: '12:15', end: '13:10' },
+    { name: 'Lunch',                  start: '13:10', end: '13:47' },
+    { name: 'Line-Up (Lunch)',        start: '13:47', end: '13:55' },
+    { name: 'Lesson 5',               start: '13:55', end: '14:55' },
+    { name: 'End of Day Line-Up',     start: '14:55', end: '15:05' }
+  ];
+
+  const QUICK_LINKS = [
+    { name: 'Bromcom', url: 'https://cloudmis.bromcom.com/Nucleus/UI/Areas/Staff/LessonDashboard.aspx' },
+    { name: 'Gmail', url: 'https://mail.google.com/mail/u/0/#inbox' },
+    { name: 'Google Drive', url: 'https://drive.google.com/drive/my-drive' },
+    { name: 'Google Classroom', url: 'https://classroom.google.com/?pli=1' },
+    { name: 'My Timetable', url: 'https://docs.google.com/spreadsheets/d/1PVmoF3qfflU3GHVZ07jamResaafN8eiK51dkpBp0kZU/edit?gid=759596685#gid=759596685' }
+  ];
+
+  // ---------- ELEMENTS ----------
+  const todayDate = document.getElementById('todayDate');
+  const clockDisplay = document.getElementById('clockDisplay');
+  const lessonBlock = document.getElementById('lessonBlock');
+  const lessonName = document.getElementById('lessonName');
+  const lessonSub = document.getElementById('lessonSub');
+  const todoCard = document.getElementById('todoCard');
+  const todoCount = document.getElementById('todoCount');
+  const todoCycler = document.getElementById('todoCycler');
+  const weatherMain = document.getElementById('weatherMain');
+  const weatherSub = document.getElementById('weatherSub');
+  const calendarList = document.getElementById('calendarList');
+  const noteInput = document.getElementById('noteInput');
+  const quickLinks = document.getElementById('quickLinks');
+  const statusLine = document.getElementById('statusLine');
+
+  function pad(n){ return n.toString().padStart(2,'0'); }
+
+  function setStatus(msg){
+    statusLine.textContent = msg;
+  }
+
+  // ---------- CLOCK + DATE ----------
+  function renderClock(){
+    const now = new Date();
+    clockDisplay.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+    todayDate.textContent = now.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+  }
+
+  // ---------- LESSON SCHEDULE ----------
+  function toMinutes(hhmm){
+    const parts = hhmm.split(':').map(Number);
+    return parts[0]*60 + parts[1];
+  }
+
+  function slotEndDate(slot, now){
+    const parts = slot.end.split(':').map(Number);
+    const d = new Date(now);
+    d.setHours(parts[0], parts[1], 0, 0);
+    return d;
+  }
+
+  function renderLesson(){
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun, 6 = Sat
+
+    if(day === 0 || day === 6){
+      lessonBlock.style.display = '';
+      lessonName.textContent = "It's the weekend";
+      lessonSub.textContent = '';
+      return;
+    }
+
+    const nowMins = now.getHours()*60 + now.getMinutes();
+    const slot = SCHEDULE.find(function(s){ return nowMins >= toMinutes(s.start) && nowMins < toMinutes(s.end); });
+
+    if(!slot){
+      lessonBlock.style.display = 'none';
+      return;
+    }
+
+    lessonBlock.style.display = '';
+    const endDate = slotEndDate(slot, now);
+    const remainingMs = endDate - now;
+    const remMins = Math.floor(remainingMs / 60000);
+    const remSecs = Math.floor((remainingMs % 60000) / 1000);
+
+    lessonName.textContent = slot.name;
+    lessonSub.textContent = 'Ends ' + slot.end + ' · ' + remMins + 'm ' + pad(remSecs) + 's left';
+  }
+
+  // ---------- TO-DO TILE ----------
+  let cyclerTasks = [];
+  let cyclerIndex = 0;
+
+  function loadTodoState(){
+    try{
+      const raw = localStorage.getItem(TODO_STORAGE_KEY);
+      if(!raw) return { tasks: [] };
+      const parsed = JSON.parse(raw);
+      if(parsed && Array.isArray(parsed.tasks)) return parsed;
+    } catch(e){}
+    return { tasks: [] };
+  }
+
+  function fmtTaskMeta(t){
+    const parts = [];
+    parts.push(t.category === 'work' ? ('Work' + (t.className ? ' · ' + t.className : '')) : 'Home');
+    if(t.deadlineDate){
+      const d = new Date(t.deadlineDate + (t.deadlineTime ? 'T'+t.deadlineTime : 'T00:00'));
+      let s = 'Due ' + d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+      if(t.deadlineTime) s += ' ' + d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+      parts.push(s);
+    }
+    return parts.join(' · ');
+  }
+
+  function renderTodoTile(){
+    const state = loadTodoState();
+    cyclerTasks = state.tasks.slice();
+    todoCount.textContent = cyclerTasks.length;
+
+    if(!cyclerTasks.length){
+      todoCycler.innerHTML = '<div class="t-title">No open tasks</div>';
+      return;
+    }
+
+    if(cyclerIndex >= cyclerTasks.length) cyclerIndex = 0;
+    showCyclerTask();
+  }
+
+  function showCyclerTask(){
+    if(!cyclerTasks.length) return;
+    const t = cyclerTasks[cyclerIndex];
+    todoCycler.innerHTML =
+      '<div class="t-title">' + escapeHtml(t.title) + '</div>' +
+      '<div class="t-meta">' + escapeHtml(fmtTaskMeta(t)) + '</div>';
+  }
+
+  function advanceCycler(){
+    if(cyclerTasks.length < 2) return;
+    cyclerIndex = (cyclerIndex + 1) % cyclerTasks.length;
+    showCyclerTask();
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  todoCard.href = TODO_APP_URL;
+
+  // ---------- WEATHER ----------
+  function weatherDescription(code){
+    const map = {
+      0: 'Clear sky', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
+      45: 'Fog', 48: 'Fog',
+      51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
+      61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+      71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+      80: 'Rain showers', 81: 'Rain showers', 82: 'Heavy showers',
+      95: 'Thunderstorm', 96: 'Thunderstorm', 99: 'Thunderstorm'
+    };
+    return map[code] || 'Weather unavailable';
+  }
+
+  function loadWeather(){
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + YATE_LAT + '&longitude=' + YATE_LON + '&current_weather=true';
+    fetch(url)
+      .then(function(res){ if(!res.ok) throw new Error('bad status'); return res.json(); })
+      .then(function(data){
+        const cw = data.current_weather;
+        weatherMain.textContent = Math.round(cw.temperature) + '°C';
+        weatherSub.textContent = weatherDescription(cw.weathercode) + ' · wind ' + Math.round(cw.windspeed) + 'km/h';
+      })
+      .catch(function(){
+        weatherMain.textContent = '--°';
+        weatherSub.textContent = "Couldn't load weather";
+      });
+  }
+
+  // ---------- CALENDAR ----------
+  function unfoldICS(text){
+    return text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
+  }
+
+  function parseICSDate(val, isDateOnly){
+    const y = val.slice(0,4), mo = val.slice(4,6), d = val.slice(6,8);
+    if(isDateOnly || val.length === 8){
+      return new Date(+y, +mo-1, +d, 0, 0, 0);
+    }
+    const hh = val.slice(9,11) || '00', mm = val.slice(11,13) || '00', ss = val.slice(13,15) || '00';
+    if(val.slice(-1) === 'Z'){
+      return new Date(Date.UTC(+y, +mo-1, +d, +hh, +mm, +ss));
+    }
+    return new Date(+y, +mo-1, +d, +hh, +mm, +ss);
+  }
+
+  function parseICS(raw){
+    const text = unfoldICS(raw);
+    const blocks = text.split('BEGIN:VEVENT').slice(1);
+    const events = [];
+    blocks.forEach(function(block){
+      const endIdx = block.indexOf('END:VEVENT');
+      const body = endIdx >= 0 ? block.slice(0, endIdx) : block;
+      const lines = body.split(/\r?\n/).filter(Boolean);
+      let summary = '', dtstart = null, allDay = false;
+      lines.forEach(function(line){
+        if(line.indexOf('SUMMARY') === 0){
+          summary = line.slice(line.indexOf(':')+1).trim();
+        } else if(line.indexOf('DTSTART') === 0){
+          const isDateOnly = line.indexOf('VALUE=DATE') !== -1 && line.indexOf('DATE-TIME') === -1;
+          const val = line.slice(line.indexOf(':')+1).trim();
+          dtstart = parseICSDate(val, isDateOnly);
+          allDay = isDateOnly;
+        }
+      });
+      if(dtstart && summary) events.push({ summary: summary, dtstart: dtstart, allDay: allDay });
+    });
+    return events;
+  }
+
+  function isSameDay(a,b){
+    return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  }
+
+  function renderCalendarFallback(){
+    calendarList.innerHTML = '<div class="empty cal-fallback">Couldn\'t load your calendar automatically. <a href="' + CALENDAR_ICS_URL + '" target="_blank" rel="noopener">Open it directly</a> instead.</div>';
+  }
+
+  function loadCalendar(){
+    fetch(CALENDAR_PROXY_URL)
+      .then(function(res){ if(!res.ok) throw new Error('bad status'); return res.text(); })
+      .then(function(text){
+        const events = parseICS(text).filter(function(e){ return isSameDay(e.dtstart, new Date()); });
+        events.sort(function(a,b){ return a.dtstart - b.dtstart; });
+
+        if(!events.length){
+          calendarList.innerHTML = '<div class="empty">Nothing on today.</div>';
+          return;
+        }
+
+        calendarList.innerHTML = events.map(function(e){
+          const time = e.allDay ? 'All day' : e.dtstart.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+          return '<div class="cal-entry"><span class="cal-time">' + time + '</span><span class="cal-title">' + escapeHtml(e.summary) + '</span></div>';
+        }).join('');
+      })
+      .catch(function(){
+        renderCalendarFallback();
+      });
+  }
+
+  // ---------- NOTE OF THE DAY ----------
+  function loadNote(){
+    try{
+      noteInput.value = localStorage.getItem(NOTE_STORAGE_KEY) || '';
+    } catch(e){}
+  }
+  noteInput.addEventListener('input', function(){
+    try{ localStorage.setItem(NOTE_STORAGE_KEY, noteInput.value); }
+    catch(e){ setStatus("Couldn't save note"); }
+  });
+
+  // ---------- QUICK LINKS ----------
+  function renderQuickLinks(){
+    quickLinks.innerHTML = QUICK_LINKS.map(function(l){
+      return '<a class="qlink" href="' + l.url + '" target="_blank" rel="noopener">' + escapeHtml(l.name) + '</a>';
+    }).join('');
+  }
+
+  // ---------- INIT ----------
+  renderClock();
+  renderLesson();
+  renderTodoTile();
+  renderQuickLinks();
+  loadNote();
+  loadWeather();
+  loadCalendar();
+
+  setInterval(renderClock, 1000);
+  setInterval(renderLesson, 1000);
+  setInterval(advanceCycler, 4000);
+  setInterval(renderTodoTile, 30000);
+  setInterval(loadWeather, 30*60*1000);
+  setInterval(loadCalendar, 15*60*1000);
+
+})();
+</script>
+
+</body>
+</html>
