@@ -608,11 +608,11 @@
   }
 
   function renderCalendarFallback(){
-    calendarList.innerHTML = '<div class="empty cal-fallback">Couldn\'t load your calendar automatically. <a href="' + CALENDAR_ICS_URL + '" target="_blank" rel="noopener">Open it directly</a> instead.</div>';
+    calendarList.innerHTML = '<div class="empty cal-fallback">Couldn\'t load your calendar automatically. <a href="' + CALENDAR_DIRECT_LINK + '" target="_blank" rel="noopener">Open it directly</a> instead.</div>';
   }
 
   function loadCalendar(){
-    fetch(CALENDAR_PROXY_URL)
+    fetch(CALENDAR_LOCAL_PATH, { cache: 'no-store' })
       .then(function(res){ if(!res.ok) throw new Error('bad status'); return res.text(); })
       .then(function(text){
         const events = parseICS(text).filter(function(e){ return isSameDay(e.dtstart, new Date()); });
