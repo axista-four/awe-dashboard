@@ -244,9 +244,73 @@
     margin-top: 16px;
     min-height: 14px;
   }
+
+  /* Sign-in overlay */
+  .overlay{
+    position:fixed; inset:0;
+    background: rgba(0,0,0,0.55);
+    display:flex; align-items:flex-end; justify-content:center;
+    z-index: 10;
+    opacity:0; pointer-events:none;
+    transition: opacity 0.18s ease;
+  }
+  .overlay.open{ opacity:1; pointer-events:auto; }
+  .sheet{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom:none;
+    width:100%;
+    max-width: 440px;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 22px 30px;
+    transform: translateY(16px);
+    transition: transform 0.18s ease;
+  }
+  .overlay.open .sheet{ transform: translateY(0); }
+  .sheet h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size: 1.15rem;
+    margin: 0 0 16px;
+    color: var(--blue);
+  }
+  .sheet input{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size: 1.1rem;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    background: transparent;
+    padding: 8px 2px 10px;
+    color: var(--blue);
+    outline: none;
+    margin-bottom: 14px;
+  }
+  .sheet input:focus{ border-color: var(--blue-soft); }
+  .sheet-actions{ display:flex; gap:10px; margin-top: 22px; }
+  .sheet-actions button{
+    flex:1; border:none; border-radius: 12px; padding: 14px 0;
+    font-family:'Inter', sans-serif; font-weight:600; font-size: 0.92rem; cursor:pointer;
+  }
+  .sheet-cancel{ background: var(--surface-2); color: var(--text-dim); }
+  .sheet-confirm{ background: var(--blue); color: var(--bg); }
+  .hint{ font-size: 0.78rem; color: var(--text-dim); margin-top:6px; }
 </style>
 </head>
 <body>
+
+<div class="overlay" id="syncOverlay">
+  <div class="sheet">
+    <h2>Sign in to sync</h2>
+    <input type="email" id="syncEmail" placeholder="Email">
+    <input type="password" id="syncPassword" placeholder="Password">
+    <div class="hint" id="syncError" style="color:var(--coral-deep);"></div>
+    <div class="sheet-actions">
+      <button class="sheet-cancel" id="syncSkip">Use offline</button>
+      <button class="sheet-confirm" id="syncSignIn">Sign in</button>
+    </div>
+  </div>
+</div>
 
 <div class="app">
   <div class="masthead">
@@ -293,7 +357,23 @@
   <div class="status-line" id="statusLine"></div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC5Z26AVb0NbTu88JjmdG1H33czsxWN_QQ",
+  authDomain: "awe-apps-51edd.firebaseapp.com",
+  projectId: "awe-apps-51edd",
+  storageBucket: "awe-apps-51edd.firebasestorage.app",
+  messagingSenderId: "842017602249",
+  appId: "1:842017602249:web:f4c73f0a0bd57d69caeb18"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+
 (function(){
 
   // ---------- CONFIG ----------
@@ -306,8 +386,10 @@
   const YATE_LAT = 51.5406;
   const YATE_LON = -2.4130;
 
-  const CALENDAR_ICS_URL = 'https://calendar.google.com/calendar/ical/39e6dc7272871c0d60eddef8e6232fd41c70d6a319d944de5419ff4758265a86%40group.calendar.google.com/private-92d087279f48b31dc9a4df04d624a2f4/basic.ics';
-  const CALENDAR_PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(CALENDAR_ICS_URL);
+  // Fetched and committed to the repo every 15 min by .github/workflows/update-calendar.yml
+  const CALENDAR_LOCAL_PATH = 'data/calendar.ics';
+  // Kept only so the fallback message can link somewhere useful if the local file isn't there yet
+  const CALENDAR_DIRECT_LINK = 'https://calendar.google.com/calendar/ical/39e6dc7272871c0d60eddef8e6232fd41c70d6a319d944de5419ff4758265a86%40group.calendar.google.com/private-92d087279f48b31dc9a4df04d624a2f4/basic.ics';
 
   const SCHEDULE = [
     { name: 'Morning Greeting/Tutor', start: '08:30', end: '09:05' },
@@ -406,7 +488,10 @@
   let cyclerTasks = [];
   let cyclerIndex = 0;
 
+  let latestTodoState = null; // kept in sync by the cloud listener below; falls back to localStorage
+
   function loadTodoState(){
+    if(latestTodoState) return latestTodoState;
     try{
       const raw = localStorage.getItem(TODO_STORAGE_KEY);
       if(!raw) return { tasks: [] };
@@ -573,6 +658,7 @@
   noteInput.addEventListener('input', function(){
     try{ localStorage.setItem(NOTE_STORAGE_KEY, noteInput.value); }
     catch(e){ setStatus("Couldn't save note"); }
+    pushNoteToCloud();
   });
 
   // ---------- QUICK LINKS ----------
@@ -580,6 +666,83 @@
     quickLinks.innerHTML = QUICK_LINKS.map(function(l){
       return '<a class="qlink" href="' + l.url + '" target="_blank" rel="noopener">' + escapeHtml(l.name) + '</a>';
     }).join('');
+  }
+
+  // ---------- CLOUD SYNC ----------
+  const syncOverlay = document.getElementById('syncOverlay');
+  const syncEmail = document.getElementById('syncEmail');
+  const syncPassword = document.getElementById('syncPassword');
+  const syncError = document.getElementById('syncError');
+  const syncSignInBtn = document.getElementById('syncSignIn');
+  const syncSkipBtn = document.getElementById('syncSkip');
+
+  let currentUid = null;
+  let unsubscribeTodo = null;
+  let unsubscribeNote = null;
+
+  setPersistence(auth, browserLocalPersistence).catch(function(){});
+
+  onAuthStateChanged(auth, function(user){
+    if(user){
+      currentUid = user.uid;
+      syncOverlay.classList.remove('open');
+      subscribeToTodo();
+      subscribeToNote();
+    } else {
+      currentUid = null;
+      syncOverlay.classList.add('open');
+    }
+  });
+
+  syncSignInBtn.addEventListener('click', function(){
+    const email = syncEmail.value.trim();
+    const pass = syncPassword.value;
+    if(!email || !pass){ syncError.textContent = 'Enter your email and password.'; return; }
+    syncError.textContent = 'Signing in…';
+    signInWithEmailAndPassword(auth, email, pass)
+      .then(function(){ syncError.textContent = ''; })
+      .catch(function(){ syncError.textContent = "Couldn't sign in — check your details."; });
+  });
+
+  syncSkipBtn.addEventListener('click', function(){
+    syncOverlay.classList.remove('open');
+  });
+
+  function subscribeToTodo(){
+    if(unsubscribeTodo) unsubscribeTodo();
+    const ref = doc(db, 'users', currentUid, 'appData', 'todo');
+    unsubscribeTodo = onSnapshot(ref, function(snap){
+      if(snap.exists()){
+        const remote = snap.data();
+        if(remote && Array.isArray(remote.tasks)){
+          latestTodoState = remote;
+          try{ localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(remote)); }catch(e){}
+          renderTodoTile();
+        }
+      }
+    }, function(err){ console.error('To-Do sync error', err); });
+  }
+
+  function subscribeToNote(){
+    if(unsubscribeNote) unsubscribeNote();
+    const ref = doc(db, 'users', currentUid, 'appData', 'dashboardNote');
+    unsubscribeNote = onSnapshot(ref, function(snap){
+      if(snap.exists()){
+        const remote = snap.data();
+        if(remote && typeof remote.note === 'string' && document.activeElement !== noteInput){
+          noteInput.value = remote.note;
+          try{ localStorage.setItem(NOTE_STORAGE_KEY, remote.note); }catch(e){}
+        }
+      } else {
+        pushNoteToCloud();
+      }
+    }, function(err){ console.error('Note sync error', err); });
+  }
+
+  function pushNoteToCloud(){
+    if(!currentUid) return;
+    const ref = doc(db, 'users', currentUid, 'appData', 'dashboardNote');
+    setDoc(ref, { note: noteInput.value }).catch(function(err){ console.error('Note push failed', err); });
   }
 
   // ---------- INIT ----------
