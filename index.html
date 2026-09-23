@@ -114,6 +114,7 @@
   }
   @media (min-width: 760px){
     .grid{ grid-template-columns: 1fr 1fr; gap: 16px; }
+    .timetable-card{ grid-row: span 2; }
   }
 
   .card{
@@ -178,6 +179,40 @@
     margin-top: 8px;
   }
 
+
+  /* Timetable card */
+  .timetable-card img{
+    width: 100%;
+    display: block;
+    border-radius: 10px;
+    margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  .week-toggle{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin-top: 12px;
+  }
+  .week-btn{
+    border:none;
+    background:transparent;
+    color: var(--text-dim);
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size: 0.84rem;
+    padding: 9px 0;
+    border-radius: 9px;
+    cursor:pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .week-btn.active{
+    background: var(--surface-2);
+    color: var(--blue);
+  }
 
   /* Note card */
   .note-card textarea{
@@ -326,6 +361,15 @@
       <div class="weather-sub" id="weatherSub">Loading…</div>
     </div>
 
+    <div class="card timetable-card">
+      <div class="card-label" id="timetableLabel">Timetable · Week 1</div>
+      <img id="timetableImg" src="images/timetable-week1.png" alt="Week 1 timetable">
+      <div class="week-toggle">
+        <button class="week-btn active" id="weekBtn1" data-week="1">Week 1</button>
+        <button class="week-btn" id="weekBtn2" data-week="2">Week 2</button>
+      </div>
+    </div>
+
     <div class="card note-card">
       <div class="card-label">Note of the day</div>
       <textarea id="noteInput" placeholder="Write something you want to remember today..."></textarea>
@@ -368,7 +412,7 @@
     { name: 'Gmail', url: 'https://mail.google.com/mail/u/0/#inbox' },
     { name: 'Google Drive', url: 'https://drive.google.com/drive/my-drive' },
     { name: 'Google Classroom', url: 'https://classroom.google.com/?pli=1' },
-    { name: 'My Timetable', url: 'https://docs.google.com/spreadsheets/d/1PVmoF3qfflU3GHVZ07jamResaafN8eiK51dkpBp0kZU/edit?gid=759596685#gid=759596685' }
+    { name: 'Google Calendar', url: 'https://calendar.google.com/calendar/u/0/r' }
   ];
 
   // ---------- ELEMENTS ----------
@@ -383,6 +427,10 @@
   const weatherMain = document.getElementById('weatherMain');
   const weatherSub = document.getElementById('weatherSub');
   const noteInput = document.getElementById('noteInput');
+  const timetableLabel = document.getElementById('timetableLabel');
+  const timetableImg = document.getElementById('timetableImg');
+  const weekBtn1 = document.getElementById('weekBtn1');
+  const weekBtn2 = document.getElementById('weekBtn2');
   const quickLinks = document.getElementById('quickLinks');
   const statusLine = document.getElementById('statusLine');
 
@@ -424,6 +472,21 @@
     }
 
     const nowMins = now.getHours()*60 + now.getMinutes();
+    const firstSlot = SCHEDULE[0];
+
+    // From 7:00am until the day's first slot starts, count down to it
+    if(nowMins >= 420 && nowMins < toMinutes(firstSlot.start)){
+      lessonBlock.style.display = '';
+      const startDate = slotEndDate({ end: firstSlot.start }, now);
+      const remainingMs = startDate - now;
+      const remMins = Math.floor(remainingMs / 60000);
+      const remSecs = Math.floor((remainingMs % 60000) / 1000);
+
+      lessonName.textContent = 'Before School';
+      lessonSub.textContent = firstSlot.name + ' starts ' + firstSlot.start + ' · ' + remMins + 'm ' + pad(remSecs) + 's left';
+      return;
+    }
+
     const slot = SCHEDULE.find(function(s){ return nowMins >= toMinutes(s.start) && nowMins < toMinutes(s.end); });
 
     if(!slot){
@@ -666,11 +729,38 @@
 
   initSync();
 
+  // ---------- TIMETABLE ----------
+  const WEEK_STORAGE_KEY = 'awe-dashboard-week';
+  let currentWeek = 1;
+
+  function renderTimetable(){
+    try{
+      const saved = localStorage.getItem(WEEK_STORAGE_KEY);
+      if(saved === '1' || saved === '2') currentWeek = Number(saved);
+    } catch(e){}
+
+    timetableLabel.textContent = 'Timetable · Week ' + currentWeek;
+    timetableImg.src = 'images/timetable-week' + currentWeek + '.png';
+    timetableImg.alt = 'Week ' + currentWeek + ' timetable';
+    weekBtn1.classList.toggle('active', currentWeek === 1);
+    weekBtn2.classList.toggle('active', currentWeek === 2);
+  }
+
+  function setWeek(week){
+    currentWeek = week;
+    try{ localStorage.setItem(WEEK_STORAGE_KEY, String(currentWeek)); }catch(e){}
+    renderTimetable();
+  }
+
+  weekBtn1.addEventListener('click', function(){ setWeek(1); });
+  weekBtn2.addEventListener('click', function(){ setWeek(2); });
+
   // ---------- INIT ----------
   renderClock();
   renderLesson();
   renderTodoTile();
   renderQuickLinks();
+  renderTimetable();
   loadNote();
   loadWeather();
 
